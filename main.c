@@ -16,28 +16,23 @@ void INTs (void);
 void config_timer2(void);
 
 
-const float TIME_MULT = 0.01; //Multiplicador de tempo para ajustar os segundoss
+const float TIME_MULT = 0.1; //Multiplicador de tempo para ajustar os segundoss
     
-#pragma code end_int=0x08
-void end_int(void)
-{
-    INTs();
-}
+void InterruptServiceHigh(void);
+
 #pragma code
 
-unsigned char conta=0;
 unsigned char proximo_estado=0;
 unsigned char apertou_btn = 0;
 void main ()
 {
-    ADCON0bits.ADON=0;
-    ADCON1=0x0F;
     TRISC = 0;
     TRISD = 0;
-    DDRAbits.RA5=0;
     RCONbits.IPEN=0;     //desliga interrupcoes com prioridade
     INTCONbits.GIE=1;    //liga interrupcoes globais
-    INTCONbits.PEIE=1;   //habilita interrupcoes nos pinos
+    INTCONbits.INT0IF = 0;
+    INTCONbits.INT0IE = 1;
+    TRISBbits.TRISB0 = 1;
     PIR1bits.TMR2IF=0;   //Flag de interrupcao ZERADO
     PIE1bits.TMR2IE=1;   //liga a interrupcao do timer 2
     
@@ -50,13 +45,13 @@ void main ()
             case 0:
                 reset();//reseta todos os sem'aforos para a configura'c~ao padr~ao
                 set_light(TC1, Vd);
-                set_light(TC2, Vd);
+                set_light(TP2, Vd);
                 delay_ms(TIME_MULT*45*1000);
                 proximo_estado = 1;
                 break;
             case 1:
                 set_light(TC1, Am);
-                set_light(TP1, Pv);
+                set_light(TP2, Pv);
                 delay_ms(TIME_MULT*15*1000);
                 proximo_estado = 2;
                 break;
@@ -86,6 +81,7 @@ void main ()
                 set_light(TP3, Vd);
                 set_light(TP4, Vd);
                 delay_ms(TIME_MULT*10*1000);
+                proximo_estado = 5;
                 break;
             case 5:
                 set_light(TP1, Pv);
@@ -93,20 +89,13 @@ void main ()
                 set_light(TP3, Pv);
                 set_light(TP4, Pv);
                 delay_ms(TIME_MULT*5*1000);
+                proximo_estado = 0;
+                apertou_btn = 0;
                 break;
         }
     }
 }
 
-#pragma interrupt INTs
-void INTs (void)
-{
-    if (PIR1bits.TMR2IF==1)
-    {
-        conta++;
-        PIR1bits.TMR2IF=0;
-    }
-}
 
 void config_timer2(void)
 {
@@ -132,3 +121,30 @@ void delay_ms (unsigned int tempo)
         Delay1KTCYx(5);
     }
 }
+
+// High priority interrupt vector
+
+#pragma code InterruptVectorHigh = 0x08
+void InterruptVectorHigh(void)
+{
+    _asm
+        goto InterruptServiceHigh
+    _endasm
+}
+// Interrupt Service Routine
+
+// Interrupt pragma for high priority
+
+#pragma code
+#pragma interrupt InterruptServiceHigh
+void InterruptServiceHigh()
+{
+    if(INTCONbits.INT0IF)
+    {
+        apertou_btn = 1;
+        
+        INTCONbits.INT0IF = 0;
+    }
+}
+
+
