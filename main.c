@@ -28,11 +28,20 @@ void main ()
 {
     TRISC = 0;
     TRISD = 0;
+    
+    DDRBbits.RB0 = 1;
+    ADCON0bits.ADON=0;
+    ADCON1= 0xFF;
     RCONbits.IPEN=0;     //desliga interrupcoes com prioridade
     INTCONbits.GIE=1;    //liga interrupcoes globais
-    INTCONbits.INT0IF = 0;
+    INTCONbits.PEIE=1;
     INTCONbits.INT0IE = 1;
-    TRISBbits.TRISB0 = 1;
+    INTCONbits.INT0IF = 0;
+    INTCONbits.RBIE = 0;
+    INTCONbits.RBIF = 0;
+    INTCONbits.PEIE_GIEL = 0;
+    INTCON2bits.INTEDG0 = 1;
+   
     PIR1bits.TMR2IF=0;   //Flag de interrupcao ZERADO
     PIE1bits.TMR2IE=1;   //liga a interrupcao do timer 2
     
